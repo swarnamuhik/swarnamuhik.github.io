@@ -1,4 +1,4 @@
-# Super Swarna World 🍄
+# Swarna World 🍄
 
 A scrollable, Mario-themed personal portfolio. Every section (About, Experience, Projects, Skills, Education, Contact) is a "level" you scroll straight through all content is visible immediately, no clicking or playing required. A custom pixel-art character (representing Swarna ) walks around in the background of every section: she auto-walks, auto-jumps now and then, and you can nudge her yourself with arrow keys, on-screen buttons, or by holding the controls but she never gates any content. She also reacts to *where* you've scrolled to:
 
