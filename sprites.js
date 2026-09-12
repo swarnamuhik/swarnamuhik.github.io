@@ -282,15 +282,34 @@ const Sprites = (() => {
   }
 
   // ---------- CLOUD ----------
-  function buildCloud() {
-    const scale = 4;
-    const c = makeCanvas(28 * scale, 16 * scale);
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#fcfcfc';
+  // fillColor/outlineColor are parameterized so GAME MODE's platform clouds
+  // can use a warm, distinct tint instead of the same flat white as the
+  // page's plain decorative sky clouds  otherwise the two blend together
+  // and it's hard to tell "background" from "thing you can jump on." The
+  // outline (when given) is drawn as a slightly-larger silhouette BEHIND
+  // the main shape, not a stroke on top of it  stroking the three
+  // overlapping lobe-circles directly leaves visible seams where they
+  // overlap; a solid larger shape underneath just peeks out as a clean
+  // border with no seams.
+  function cloudPath(ctx, scale, pad, grow = 0) {
     ctx.beginPath();
-    ctx.arc(7 * scale, 10 * scale, 6 * scale, 0, Math.PI * 2);
-    ctx.arc(14 * scale, 6 * scale, 7 * scale, 0, Math.PI * 2);
-    ctx.arc(21 * scale, 10 * scale, 6 * scale, 0, Math.PI * 2);
+    ctx.arc(pad + 7 * scale, pad + 10 * scale, 6 * scale + grow, 0, Math.PI * 2);
+    ctx.arc(pad + 14 * scale, pad + 6 * scale, 7 * scale + grow, 0, Math.PI * 2);
+    ctx.arc(pad + 21 * scale, pad + 10 * scale, 6 * scale + grow, 0, Math.PI * 2);
+  }
+  function buildCloud(fillColor = '#fcfcfc', outlineColor = null) {
+    const scale = 4;
+    const growAmt = outlineColor ? scale : 0; // thin border, padded so it isn't clipped
+    const pad = growAmt;
+    const c = makeCanvas(28 * scale + pad * 2, 16 * scale + pad * 2);
+    const ctx = c.getContext('2d');
+    if (outlineColor) {
+      ctx.fillStyle = outlineColor;
+      cloudPath(ctx, scale, pad, growAmt);
+      ctx.fill();
+    }
+    ctx.fillStyle = fillColor;
+    cloudPath(ctx, scale, pad, 0);
     ctx.fill();
     return c.toDataURL();
   }
@@ -345,6 +364,10 @@ const Sprites = (() => {
   }
 
   return {
+    // Raw grid + palette for frame 0 (stand pose), exposed so the hero
+    // section can build a real particle-portrait out of Swarna's own
+    // pixel-art colors instead of a generic dot field.
+    characterPixelData: { grid: characterGrid(0), palette: charPalette },
     character: [buildCharacterSprite(0, false), buildCharacterSprite(1, false), buildCharacterSprite(2, false)],
     characterCapped: [buildCharacterSprite(0, true), buildCharacterSprite(1, true), buildCharacterSprite(2, true)],
     truck: buildTruck(),
@@ -358,6 +381,11 @@ const Sprites = (() => {
     ground: buildGroundTile(),
     coin: [buildCoin(0), buildCoin(1), buildCoin(2), buildCoin(3)],
     cloud: buildCloud(),
+    // GAME MODE's jump-on platforms: a warm peachy-gold tint with a soft
+    // tan outline, so they read as distinct "things to land on" against
+    // both the blue sky and the page's plain white ambient clouds, instead
+    // of blending in.
+    gameCloud: buildCloud('#ffe3ad', '#e0a83c'),
     bush: buildBush(),
     flag: buildFlag(),
     star: buildStar(),

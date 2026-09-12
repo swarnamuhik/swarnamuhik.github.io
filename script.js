@@ -5,6 +5,11 @@
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Shared with the GAME MODE overlay near the bottom of this file: while
+  // that's on, arrow keys / space drive the game character instead of the
+  // ambient one, so the ambient character's own controls stand down.
+  const GameMode = { active: false };
+
   // ---------------- SOUND ----------------
   // Synthesized 8-bit-style bleeps via Web Audio  no audio files needed.
   // Browsers block audio before any user interaction, so we lazily create
@@ -58,6 +63,11 @@
     return {
       jump: () => tone(440, 0.12, 'square', 0.07),
       click: () => tone(660, 0.05, 'square', 0.06),
+      coin: () => { tone(988, 0.06, 'square', 0.06); tone(1319, 0.09, 'square', 0.05, 0.05); },
+      fail: () => { tone(200, 0.1, 'sawtooth', 0.07); tone(140, 0.16, 'sawtooth', 0.07, 0.09); },
+      win: () => {
+        [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 'square', 0.07, i * 0.11));
+      },
       isMuted: () => muted,
       toggle() {
         muted = !muted;
@@ -68,10 +78,12 @@
     };
   })();
 
-  // mute button wiring
+  // mute button wiring  same clean line-icon style as the social links
   const muteBtn = document.getElementById('sound-toggle');
+  const SOUND_ON_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
+  const SOUND_OFF_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
   function refreshMuteBtn() {
-    muteBtn.textContent = Sound.isMuted() ? '🔇' : '🔊';
+    muteBtn.innerHTML = Sound.isMuted() ? SOUND_OFF_SVG : SOUND_ON_SVG;
     muteBtn.setAttribute('aria-label', Sound.isMuted() ? 'Unmute sound' : 'Mute sound');
     muteBtn.setAttribute('aria-pressed', String(Sound.isMuted()));
   }
@@ -111,11 +123,18 @@
     });
   }
 
+  // SECTIONS labels are stored ALL CAPS (used as-is for aria-label/preview
+  // text); the visible nav text is titlecased from that so it reads as
+  // "About" rather than shouty "ABOUT".
+  function titleCase(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
   SECTIONS.forEach(s => {
     const btn = document.createElement('button');
     btn.className = 'nav-node';
     btn.type = 'button';
-    btn.textContent = s.icon;
+    btn.textContent = titleCase(s.label);
     btn.setAttribute('aria-label', s.label);
     btn.dataset.target = s.id;
 
@@ -123,9 +142,10 @@
       Sound.click();
       document.getElementById(s.id).scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
       hidePreview();
+      closeNavMenu();
     });
-    btn.addEventListener('mouseenter', (e) => showPreview(s.id, btn));
-    btn.addEventListener('focus', (e) => showPreview(s.id, btn));
+    btn.addEventListener('mouseenter', (e) => showPreview(PREVIEW_TEXT[s.id], btn));
+    btn.addEventListener('focus', (e) => showPreview(PREVIEW_TEXT[s.id], btn));
     btn.addEventListener('mouseleave', hidePreview);
     btn.addEventListener('blur', hidePreview);
     // touch: tap shows preview briefly is unnecessary  tap just navigates (handled by click)
@@ -134,8 +154,8 @@
     navNodeEls[s.id] = btn;
   });
 
-  function showPreview(id, btn) {
-    navPreview.textContent = PREVIEW_TEXT[id] || '';
+  function showPreview(text, btn) {
+    navPreview.textContent = text || '';
     navPreview.classList.remove('hidden');
     const rect = btn.getBoundingClientRect();
     const previewWidth = 220;
@@ -147,6 +167,185 @@
   function hidePreview() {
     navPreview.classList.add('hidden');
   }
+
+  // ---------------- NAV: external / social links (own group, own spot) ----------------
+  // Deliberately a separate container from nav-nodes, not mixed into that
+  // scrolling row  page sections on one side, personal/social links on
+  // the other, same split as the site this was modelled on.
+  const navSocialEl = document.getElementById('nav-social');
+  const SOCIAL_LINKS = [
+    { icon: 'mail', title: 'Email me', href: 'mailto:kswarnamuhi18@gmail.com' },
+    { icon: 'linkedin', title: 'LinkedIn', href: 'https://www.linkedin.com/in/swarnamuhi-kannan/' },
+    { icon: 'github', title: 'GitHub', href: 'https://github.com/swarnamuhik' },
+    { icon: 'write', title: 'My Substack writings', href: 'https://substack.com/@swarnamuhik?r=8ms253&utm_campaign=profile&utm_medium=profile-page' },
+  ];
+  // Small clean line icons (stroke = currentColor) standing in for the old
+  // emoji, matching a minimal portfolio-nav look.
+  const SOCIAL_SVGS = {
+    mail: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+    linkedin: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7.5" y1="10" x2="7.5" y2="17"/><circle cx="7.5" cy="6.8" r="0.9" fill="currentColor" stroke="none"/><path d="M11.5 17v-4.2c0-1.6 1-2.6 2.4-2.6 1.4 0 2.1 1 2.1 2.6V17"/></svg>',
+    github: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.4 9.4 0 0 1 5 0c1.9-1.3 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>',
+    write: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/><path d="M14.5 5.5l3 3"/></svg>',
+  };
+  if (navSocialEl) {
+    SOCIAL_LINKS.forEach(s => {
+      const a = document.createElement('a');
+      a.className = 'nav-social-link';
+      a.innerHTML = SOCIAL_SVGS[s.icon] || '';
+      a.href = s.href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.setAttribute('aria-label', s.title);
+      a.addEventListener('click', () => { Sound.click(); closeNavMenu(); });
+      a.addEventListener('mouseenter', () => showPreview(s.title, a));
+      a.addEventListener('focus', () => showPreview(s.title, a));
+      a.addEventListener('mouseleave', hidePreview);
+      a.addEventListener('blur', hidePreview);
+      navSocialEl.appendChild(a);
+    });
+  }
+
+  // ---------------- NAV: mobile hamburger (collapsible nav-menu) ----------------
+  const navHamburger = document.getElementById('nav-hamburger');
+  const navMenuEl = document.getElementById('nav-menu');
+  function closeNavMenu() {
+    if (!navMenuEl || !navMenuEl.classList.contains('open')) return;
+    navMenuEl.classList.remove('open');
+    document.body.classList.remove('nav-menu-open');
+    if (navHamburger) navHamburger.setAttribute('aria-expanded', 'false');
+  }
+  function openNavMenu() {
+    navMenuEl.classList.add('open');
+    // The GAME MODE HUD is a fixed element with its own high z-index so it
+    // can float above the page; without this the open dropdown  a
+    // descendant of the nav's own, lower stacking context  would render
+    // underneath it instead of on top.
+    document.body.classList.add('nav-menu-open');
+    navHamburger.setAttribute('aria-expanded', 'true');
+  }
+  if (navHamburger && navMenuEl) {
+    navHamburger.addEventListener('click', () => {
+      Sound.click();
+      if (navMenuEl.classList.contains('open')) closeNavMenu(); else openNavMenu();
+    });
+    // Tapping/clicking outside the open menu (and off the hamburger itself) closes it.
+    document.addEventListener('click', (e) => {
+      if (!navMenuEl.classList.contains('open')) return;
+      if (navMenuEl.contains(e.target) || navHamburger.contains(e.target)) return;
+      closeNavMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeNavMenu();
+    });
+    // Resizing past the mobile breakpoint (e.g. rotating a tablet) shouldn't
+    // leave the menu stuck open once it's shown inline again.
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 760) closeNavMenu();
+    });
+  }
+
+  // ---------------- HERO PORTRAIT: hover-scatter particle field ----------------
+  // Built from Swarna's own pixel-art (grid + palette exported by sprites.js),
+  // not a generic dot field. Each pixel becomes a particle with a fixed home
+  // position; particles near the cursor get pushed away, and continuously
+  // spring back toward home with damping  so it reassembles on its own once
+  // the mouse moves off, the same feel as the site this was modelled on.
+  (function initHeroPortrait() {
+    const canvas = document.getElementById('hero-portrait-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const { grid, palette } = Sprites.characterPixelData;
+    const SCALE = 14;
+    const REPEL_RADIUS = 82;
+    const REPEL_STRENGTH = 1500;
+    const SPRING_K = 0.05;
+    const DAMPING = 0.84;
+
+    // Entrance effect: every particle starts flung out from its home spot in
+    // a random direction, then the same spring-back-to-home physics used for
+    // the hover-scatter (below) pulls it into place on its own  so on page
+    // load the whole portrait looks like it's assembling itself out of
+    // scattered pixels converging from every direction, no separate
+    // animation system needed.
+    const particles = [];
+    for (let gy = 0; gy < grid.length; gy++) {
+      const row = grid[gy];
+      for (let gx = 0; gx < row.length; gx++) {
+        const ch = row[gx];
+        if (ch === '.') continue;
+        const hx = gx * SCALE + SCALE / 2;
+        const hy = gy * SCALE + SCALE / 2;
+        const flungAngle = Math.random() * Math.PI * 2;
+        const flungDist = prefersReducedMotion ? 0 : 130 + Math.random() * 260;
+        particles.push({
+          hx, hy,
+          x: hx + Math.cos(flungAngle) * flungDist,
+          y: hy + Math.sin(flungAngle) * flungDist,
+          vx: 0, vy: 0,
+          color: palette[ch],
+          r: SCALE * 0.46,
+        });
+      }
+    }
+
+    canvas.width = grid[0].length * SCALE;
+    canvas.height = grid.length * SCALE;
+
+    let mouseX = null, mouseY = null;
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+    canvas.addEventListener('mouseleave', () => { mouseX = null; mouseY = null; });
+    canvas.addEventListener('touchmove', (e) => {
+      if (!e.touches || !e.touches[0]) return;
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.touches[0].clientX - rect.left;
+      mouseY = e.touches[0].clientY - rect.top;
+    }, { passive: true });
+    canvas.addEventListener('touchend', () => { mouseX = null; mouseY = null; });
+
+    function drawStatic() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.hx - p.r, p.hy - p.r, p.r * 2, p.r * 2);
+      });
+    }
+
+    if (prefersReducedMotion) {
+      drawStatic();
+      return; // skip the physics loop entirely  respect reduced-motion
+    }
+
+    function tick() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        if (mouseX !== null) {
+          const dx = p.x - mouseX;
+          const dy = p.y - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+          if (dist < REPEL_RADIUS) {
+            const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH / dist;
+            p.vx += dx * force * 0.001;
+            p.vy += dy * force * 0.001;
+          }
+        }
+        p.vx += (p.hx - p.x) * SPRING_K;
+        p.vy += (p.hy - p.y) * SPRING_K;
+        p.vx *= DAMPING;
+        p.vy *= DAMPING;
+        p.x += p.vx;
+        p.y += p.vy;
+
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+      });
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
 
   // ---------------- ACTIVE NAV HIGHLIGHT on scroll ----------------
   const sectionEls = SECTIONS.map(s => document.getElementById(s.id));
@@ -291,12 +490,14 @@
   jumpBtn.addEventListener('click', startJump);
 
   window.addEventListener('keydown', (e) => {
+    if (GameMode.active) return; // GAME MODE owns the keyboard while it's on
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') setManual(-1);
     if (e.code === 'ArrowRight' || e.code === 'KeyD') setManual(1);
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); startJump(); }
   });
   window.addEventListener('keyup', (e) => {
+    if (GameMode.active) return;
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') { if (Char.manualDir === -1) Char.manualDir = 0; }
     if (e.code === 'ArrowRight' || e.code === 'KeyD') { if (Char.manualDir === 1) Char.manualDir = 0; }
   });
@@ -624,5 +825,346 @@
 
   // initial sync
   syncSectionToScroll();
+
+  // ---------------- GAME MODE: cloud-hopper overlay, doesn't gate the page ----------------
+  // Toggle on: a mushroom  a character of its own, entirely separate from
+  // Swarna's ambient sprite, which keeps doing its own thing untouched
+  // appears standing on a cloud and hops from cloud to cloud (arrow keys /
+  // A-D to move, Space / up-arrow to jump) while the real page stays fully
+  // visible and scrollable underneath. Clouds are scattered the whole way
+  // down the page in real document coordinates, so scrolling brings new
+  // ones into reach instead of ending the game. Miss a jump and it flashes
+  // "FAILED" and drops the mushroom back onto solid ground rather than
+  // stopping anything  this is a fun extra, never a gate on the content.
+  (() => {
+    const toggleBtn = document.getElementById('game-mode-toggle');
+    const infoBtn = document.getElementById('game-info-btn');
+    const infoPopover = document.getElementById('game-info-popover');
+    const scorePill = document.getElementById('game-score-pill');
+    const scoreVal = document.getElementById('game-score-val');
+    const failToast = document.getElementById('game-fail-toast');
+    const winBanner = document.getElementById('game-win-banner');
+    const canvas = document.getElementById('game-canvas');
+    if (!toggleBtn || !canvas) return;
+
+    if (prefersReducedMotion) {
+      toggleBtn.addEventListener('click', () => {
+        infoPopover.textContent = "Game mode is paused because you've asked for reduced motion.";
+        infoPopover.classList.remove('hidden');
+      });
+      infoBtn.addEventListener('click', () => infoPopover.classList.toggle('hidden'));
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    // Bigger, floatier jump (max height = JUMP_V^2 / (2*GRAVITY)  183px)
+    // with clouds spaced further apart both vertically and sideways than
+    // before, so the hop actually feels like a jump instead of a hair-short
+    // hop between crowded platforms. Still tuned so one jump reliably
+    // clears exactly ONE row  never two  with margin to spare, and there's
+    // comfortably enough hang time left after the apex to drift sideways
+    // onto the next cloud before landing.
+    const GRAVITY = 0.7, JUMP_V = -16, SPEED = 3.8;
+    const PLAYER_W = 56, PLAYER_H = 45; // prominent but not oversized (smaller again per feedback)
+    const CLOUD_W = 92, CLOUD_H = 52;
+    const CLOUD_GAP_Y = 130;      // vertical spacing between rows of clouds
+    const FAIL_DISTANCE = 320;    // how far below the last safe cloud counts as "missed it"
+
+    function img(src) { const i = new Image(); i.src = src; return i; }
+    const playerImg = img(Sprites.mushroom);
+    const coinImgs = Sprites.coin.map(img);
+    const cloudImg = img(Sprites.gameCloud);
+
+    let W = 0, H = 0, dpr = 1;
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    // player position: x is screen-space (no horizontal scrolling on this
+    // site), docY is document-space so it naturally travels with scroll
+    // exactly like the site's other page-anchored sprites do.
+    const player = { x: 80, docY: 0, vy: 0, facing: 1, onGround: true };
+    let clouds = [];    // { x, docY, hasCoin, coinGot, frame }
+    let collected = 0;
+    let totalCoins = 0;
+    let won = false;
+    let dancing = false;
+    let danceT = 0;
+    let sparkleCooldown = 0;
+    let lastSafe = { x: 80, docY: 0 };
+    const keys = { left: false, right: false };
+    let rafId = null;
+
+    function screenY(docY) { return docY - window.scrollY; }
+
+    function buildWorld() {
+      clouds = [];
+      // Span the ENTIRE page, bottom to top  not just one screen's worth
+      // near wherever the toggle happened to be clicked. That's what makes
+      // scrolling actually keep the game going: there are clouds waiting
+      // the whole length of the page, in both directions, no matter where
+      // you scroll to.
+      // Floor of one screen-and-change below the current scroll position
+      // guards against a same-page-height report of 0 (as some
+      // test/headless environments give) ever leaving the world empty.
+      const docH = Math.max(
+        document.body.scrollHeight, document.documentElement.scrollHeight,
+        window.scrollY + H + 1000,
+      );
+      let y = docH - 140;
+      let prevX = 60;
+      let dir = 1;
+      let runLeft = 2 + Math.floor(Math.random() * 3); // clouds left before a possible turn
+      let first = true;
+      while (y > -CLOUD_GAP_Y) {
+        let x;
+        if (first) {
+          x = 60;
+          first = false;
+        } else {
+          // Switchback path, not a strict every-other zig-zag: keep
+          // drifting the same way for a few clouds in a row (a diagonal
+          // "run"), then turn  like a trail up a hillside  so the
+          // ladder actually traverses the width of the page instead of
+          // wobbling in place near one edge. Each step still stays inside
+          // how far the mushroom can drift sideways during one jump, so
+          // every hop is still reachable.
+          const step = 55 + Math.random() * 55;
+          x = prevX + dir * step;
+          const hitEdge = x < 20 || x > W - 20 - CLOUD_W;
+          runLeft--;
+          if (hitEdge || runLeft <= 0) {
+            dir *= -1;
+            runLeft = 2 + Math.floor(Math.random() * 3);
+            x = prevX + dir * step;
+          }
+          x = Math.max(20, Math.min(W - 20 - CLOUD_W, x));
+        }
+        clouds.push({
+          x, docY: y,
+          hasCoin: Math.random() < 0.45,
+          coinGot: false,
+          frame: Math.random() * coinImgs.length,
+        });
+        prevX = x;
+        y -= CLOUD_GAP_Y * (0.75 + Math.random() * 0.15);
+      }
+      collected = 0;
+      totalCoins = clouds.reduce((n, c) => n + (c.hasCoin ? 1 : 0), 0);
+      won = false;
+      dancing = false;
+      winBanner.classList.remove('show');
+      scoreVal.textContent = '0';
+    }
+
+    // Find whichever cloud sits closest to the visitor's current scroll
+    // position, so turning game mode on spawns the mushroom right where
+    // they already are on the page instead of always at one fixed spot.
+    function nearestCloudToViewport() {
+      const target = window.scrollY + H - 140;
+      let best = clouds[0], bestDist = Infinity;
+      clouds.forEach(c => {
+        const d = Math.abs(c.docY - target);
+        if (d < bestDist) { bestDist = d; best = c; }
+      });
+      return best;
+    }
+
+    function showFail() {
+      failToast.innerHTML = 'OUCH! YOU FELL<br><span style="font-size:11px">it’s fine, you can climb up!</span>';
+      failToast.classList.add('show');
+      clearTimeout(showFail._t);
+      showFail._t = setTimeout(() => failToast.classList.remove('show'), 1400);
+    }
+
+    function triggerWin() {
+      won = true;
+      dancing = true;
+      danceT = 0;
+      Sound.win();
+      winBanner.classList.add('show');
+      clearTimeout(triggerWin._t);
+      triggerWin._t = setTimeout(() => {
+        winBanner.classList.remove('show');
+        dancing = false;
+      }, 3200);
+    }
+
+    function respawn() {
+      Sound.fail();
+      showFail();
+      player.x = lastSafe.x;
+      player.docY = lastSafe.docY - PLAYER_H;
+      player.vy = 0;
+      player.onGround = true;
+    }
+
+    function onKeyDown(e) {
+      if (!GameMode.active) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        if (player.onGround) { player.vy = JUMP_V; player.onGround = false; Sound.jump(); }
+      }
+      if (e.code === 'Escape') deactivate();
+    }
+    function onKeyUp(e) {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    }
+
+    function loop() {
+      if (!GameMode.active) return;
+
+      if (dancing) {
+        // hold still on the winning cloud for the victory jig instead of
+        // still falling/walking underneath the celebration
+        danceT++;
+        sparkleCooldown -= 16.7;
+        if (sparkleCooldown <= 0) {
+          sparkleCooldown = 90;
+          spawnSparkleBurst(player.x, player.docY, PLAYER_W, PLAYER_H);
+        }
+        draw();
+        rafId = requestAnimationFrame(loop);
+        return;
+      }
+
+      const vx = (keys.left ? -SPEED : 0) + (keys.right ? SPEED : 0);
+      if (vx !== 0) player.facing = vx > 0 ? 1 : -1;
+      player.x = Math.max(10, Math.min(W - PLAYER_W - 10, player.x + vx));
+
+      const wasFalling = player.vy > 0;
+      player.vy += GRAVITY;
+      const prevDocY = player.docY;
+      player.docY += player.vy;
+      player.onGround = false;
+
+      // land on a cloud only when moving downward through its top surface
+      if (player.vy > 0) {
+        for (const c of clouds) {
+          const cloudTop = c.docY;
+          const withinX = player.x + PLAYER_W > c.x + 8 && player.x < c.x + CLOUD_W - 8;
+          const crossedTop = prevDocY + PLAYER_H <= cloudTop + 10 && player.docY + PLAYER_H >= cloudTop;
+          if (withinX && crossedTop) {
+            player.docY = cloudTop - PLAYER_H;
+            player.vy = 0;
+            player.onGround = true;
+            lastSafe = { x: player.x, docY: cloudTop };
+            if (c.hasCoin && !c.coinGot) {
+              c.coinGot = true;
+              collected++;
+              scoreVal.textContent = String(collected);
+              Sound.coin();
+              if (totalCoins > 0 && collected >= totalCoins && !won) triggerWin();
+            }
+            break;
+          }
+        }
+      }
+
+      if (!won && !player.onGround && player.docY > lastSafe.docY + FAIL_DISTANCE) {
+        respawn();
+      }
+
+      clouds.forEach(c => { if (c.hasCoin && !c.coinGot) c.frame = (c.frame + 0.1) % coinImgs.length; });
+
+      draw();
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      clouds.forEach(c => {
+        const sy = screenY(c.docY);
+        if (sy < -CLOUD_H || sy > H + CLOUD_H) return; // cull off-screen
+        ctx.drawImage(cloudImg, c.x, sy, CLOUD_W, CLOUD_H);
+        if (c.hasCoin && !c.coinGot) {
+          const fi = Math.floor(c.frame) % coinImgs.length;
+          ctx.drawImage(coinImgs[fi], c.x + CLOUD_W / 2 - 12, sy - 26, 24, 24);
+        }
+      });
+      const py = screenY(player.docY);
+      ctx.save();
+      if (dancing) {
+        // a little victory jig: bounce + wobble around the mushroom's own
+        // center, alternating facing each beat so it reads as dancing
+        // rather than just wiggling in place.
+        const cx = player.x + PLAYER_W / 2, cy = py + PLAYER_H / 2;
+        const bounce = 1 + Math.sin(danceT / 4) * 0.14;
+        const wobble = Math.sin(danceT / 7) * 0.3;
+        const flip = Math.sin(danceT / 9) < 0 ? -1 : 1;
+        ctx.translate(cx, cy);
+        ctx.rotate(wobble);
+        ctx.scale(bounce * flip, bounce);
+        ctx.drawImage(playerImg, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
+      } else if (player.facing < 0) {
+        ctx.translate(player.x + PLAYER_W, py);
+        ctx.scale(-1, 1);
+        ctx.drawImage(playerImg, 0, 0, PLAYER_W, PLAYER_H);
+      } else {
+        ctx.drawImage(playerImg, player.x, py, PLAYER_W, PLAYER_H);
+      }
+      ctx.restore();
+    }
+
+    function activate() {
+      GameMode.active = true;
+      resize();
+      document.body.classList.add('game-mode-active');
+      toggleBtn.classList.add('is-on');
+      toggleBtn.setAttribute('aria-pressed', 'true');
+      scorePill.classList.remove('hidden');
+      buildWorld();
+      const spawn = nearestCloudToViewport();
+      player.x = spawn.x; player.docY = spawn.docY - PLAYER_H; player.vy = 0; player.onGround = true;
+      lastSafe = { x: player.x, docY: spawn.docY };
+      rafId = requestAnimationFrame(loop);
+    }
+    function deactivate() {
+      GameMode.active = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      document.body.classList.remove('game-mode-active');
+      toggleBtn.classList.remove('is-on');
+      toggleBtn.setAttribute('aria-pressed', 'false');
+      scorePill.classList.add('hidden');
+      infoPopover.classList.add('hidden');
+      failToast.classList.remove('show');
+      winBanner.classList.remove('show');
+      dancing = false;
+      clearTimeout(triggerWin._t);
+      ctx.clearRect(0, 0, W, H);
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      Sound.click();
+      GameMode.active ? deactivate() : activate();
+    });
+    infoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      infoPopover.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e) => {
+      if (!infoPopover.classList.contains('hidden') && e.target !== infoBtn && !infoPopover.contains(e.target)) {
+        infoPopover.classList.add('hidden');
+      }
+    });
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('resize', debounce(() => {
+      // The toggle itself is hidden below this width (no on-screen controls
+      // exist for it there); if someone's already playing and resizes down
+      // past that point  narrowing a window, rotating a tablet  bail out
+      // of it cleanly instead of leaving it stuck running unreachably.
+      if (GameMode.active && window.innerWidth <= 760) { deactivate(); return; }
+      if (GameMode.active) resize();
+    }, 200));
+  })();
 
 })();

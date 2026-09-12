@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-<title>SWARNA K - Portfolio</title>
+<title>Swarna K</title>
 <meta name="description" content="Swarna K - AI/Data Science portfolio. Master of IT (AI) student at UNSW Sydney, former Data Scientist at Caterpillar Inc.">
 <link rel="icon" href="favicon/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16.png">
@@ -21,20 +21,52 @@
   <!-- ============ STICKY WORLD-MAP NAV ============ -->
   <nav id="world-nav" aria-label="Section navigation">
     <div class="nav-inner">
-      <button type="button" class="nav-logo" id="nav-home-btn" aria-label="Go to top">SWARNA K - PORTFOLIO</button>
-      <div class="nav-nodes" id="nav-nodes"><!-- populated by script.js --></div>
+      <button type="button" class="nav-logo" id="nav-home-btn" aria-label="Go to top">Swarna K</button>
+      <!-- Nodes + social live inside one collapsible menu: shown inline on
+           wide screens, tucked behind the hamburger below the breakpoint. -->
+      <div class="nav-menu" id="nav-menu">
+        <div class="nav-nodes" id="nav-nodes"><!-- populated by script.js --></div>
+        <!-- Kept as its own group, visually separate from the section nodes
+             on the left  same split as the site this was modelled on: page
+             sections on one side, personal / social links on the other. -->
+        <div class="nav-social" id="nav-social" aria-label="Elsewhere"><!-- populated by script.js --></div>
+      </div>
       <button id="sound-toggle" type="button" aria-label="Mute sound" aria-pressed="false">🔊</button>
+      <button type="button" class="nav-hamburger" id="nav-hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </nav>
+
+  <!-- ============ GAME MODE: toggle + HUD (overlay lives at the end of body) ============ -->
+  <div id="game-mode-bar">
+    <button id="game-mode-toggle" type="button" aria-pressed="false">
+      <span class="game-mode-dot" aria-hidden="true"></span> GAME MODE
+    </button>
+    <button id="game-info-btn" type="button" aria-label="How to play">i</button>
+    <div id="game-info-popover" class="hidden" role="note">
+      Arrow keys / A-D to move, Space / ↑ to jump.<br>Hop cloud to cloud and grab coins  miss a jump and it's a fail, but you respawn right away. Scroll the page to reach new clouds. Grab every coin to win! Click GAME MODE again to exit.
+    </div>
+  </div>
+  <div id="game-score-pill" class="hidden" aria-hidden="true">🪙 <span id="game-score-val">0</span></div>
+  <div id="game-fail-toast" class="game-fail-toast" aria-live="polite"></div>
+  <div id="game-win-banner" class="game-win-banner" aria-live="polite">
+    🏆 YOU WON! 🏆<br><span>All coins collected!</span>
+  </div>
 
   <!-- ============ HERO / TITLE ============ -->
   <header id="hero" class="level-section">
     <div class="parallax-sky"></div>
     <div class="parallax-clouds" data-layer="clouds"></div>
-    <div class="hero-content">
-      <div class="hero-logo"><br>SWARNA'S<br>WORLD</div>
-      <p class="hero-tagline">Master of IT (AI) Student | Former Data Scientist @ Caterpillar</p>
-      <a href="#about" class="hero-cta">SCROLL TO START</a>
+    <div class="hero-content hero-flex">
+      <div class="hero-portrait-wrap">
+        <canvas id="hero-portrait-canvas" aria-hidden="true"></canvas>
+      </div>
+      <div class="hero-text">
+        <div class="hero-logo hero-greeting">hi, <span class="accent-name">swarna</span> here<span class="cursor-blink" aria-hidden="true">|</span></div>
+        <p class="hero-tagline">AI student and art enthusiast in Sydney. I build ML models and make little projects at the intersection of tech and art. While sipping coffee and writing my thougts...</p>
+        <a href="mailto:kswarnamuhi18@gmail.com?subject=Hi%20Swarna!" class="hero-cta">✉️ Say hi!</a>
+      </div>
     </div>
     <div class="ground-strip"></div>
   </header>
@@ -109,9 +141,11 @@
         <h2>PUBLICATIONS AND PROJECTS</h2>
       </div>
 
+      <a href="https://github.com/swarnamuhik" target="_blank" rel="noopener noreferrer" class="projects-github-link">💻 See all my projects on GitHub</a>
+
       <div class="card-grid">
 
-        
+
 
         <article class="info-card pop-card">
           <h3>📄 PUBLICATION</h3>
@@ -338,6 +372,11 @@
 
   <!-- Section preview tooltip for nav nodes -->
   <div id="nav-preview" class="hidden"></div>
+
+  <!-- Game Mode overlay canvas: sits on top of the live page (not a popup).
+       Turned on via the GAME MODE pill above; pointer-events stay off so
+       the real page underneath remains fully readable/clickable. -->
+  <canvas id="game-canvas" aria-hidden="true"></canvas>
 
 <script src="sprites.js"></script>
 <script src="script.js"></script>

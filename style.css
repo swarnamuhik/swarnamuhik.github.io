@@ -15,6 +15,7 @@
   --ink: #1a1a2e;
   --card-bg: #FCFCFC;
   --nav-bg: rgba(16,16,16,0.92);
+  --accent: #6EE7B7; /* mint/teal highlight  nav hover/active, name accent, cursor */
   --font-pixel: 'Press Start 2P', 'Courier New', monospace;
   --font-body: 'Courier New', monospace;
   --nav-h: 64px;
@@ -41,16 +42,20 @@ ul{ margin:0; padding:0; }
   border-bottom: 4px solid var(--coin);
   height: var(--nav-h);
 }
+/* While the mobile dropdown is open, lift the whole nav above the fixed
+   GAME MODE HUD (z-index 140) so the open menu isn't hidden behind it. */
+body.nav-menu-open #world-nav{ z-index: 200; }
 .nav-inner{
   max-width: 1100px; margin: 0 auto;
   height: 100%;
-  display:flex; align-items:center; gap: 18px;
+  display:flex; align-items:center; gap: 14px;
   padding: 0 16px;
+  position: relative;
 }
 .nav-logo{
   font-family: var(--font-pixel);
   color: var(--white);
-  font-size: clamp(8px, 1.6vw, 12px);
+  font-size: clamp(9px, 1.7vw, 13px);
   flex-shrink: 0;
   text-shadow: 2px 2px var(--brick-red);
   background: none;
@@ -64,32 +69,70 @@ ul{ margin:0; padding:0; }
   transform: translateY(-1px);
   outline: none;
 }
-.nav-nodes{
-  display:flex; gap: 8px;
-  overflow-x: auto;
+
+/* Nodes + social share this flexible middle strip so social can be pushed
+   all the way to its right edge (margin-left:auto on .nav-social below). */
+.nav-menu{
+  display:flex; align-items:center;
   flex: 1;
+  min-width: 0;
+}
+.nav-nodes{
+  display:flex; gap: 6px;
+  overflow-x: auto;
+  min-width: 0;
   scrollbar-width: none;
 }
 .nav-nodes::-webkit-scrollbar{ display:none; }
 .nav-node{
   flex-shrink: 0;
-  width: 40px; height: 40px;
-  border-radius: 6px;
-  border: 2px solid var(--black);
-  background: var(--coin);
-  display:flex; align-items:center; justify-content:center;
-  font-size: 18px;
+  background: none;
+  border: none;
+  font-family: var(--font-pixel);
+  /* Deliberately smaller than .nav-logo  section links read as secondary
+     to the site's name, not equal to it. */
+  font-size: 7.5px;
+  letter-spacing: 0.4px;
+  color: var(--white);
+  padding: 6px 9px;
   cursor:pointer;
-  transition: transform .15s;
+  transition: color .15s, transform .15s;
   position: relative;
 }
 .nav-node:hover, .nav-node:focus-visible{
-  transform: translateY(-3px) scale(1.07);
+  color: var(--accent);
+  transform: translateY(-2px);
   outline: none;
 }
 .nav-node.active{
-  background: var(--grass);
-  box-shadow: 0 0 0 3px rgba(0,168,0,0.4);
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(110,231,183,0.55);
+}
+
+/* Its own group, pushed all the way to the right edge of the flexible
+   middle strip  same split as the reference site: page sections on one
+   side, personal / social links pinned to the far right on the other. */
+.nav-social{
+  display:flex; align-items:center; gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 14px;
+  border-left: 2px solid rgba(255,255,255,0.25);
+}
+.nav-social-link{
+  width: 34px; height: 34px;
+  border-radius: 6px;
+  display:flex; align-items:center; justify-content:center;
+  color: var(--white);
+  text-decoration: none;
+  transition: background .15s, transform .15s, color .15s;
+}
+.nav-social-link svg{ width: 17px; height: 17px; display:block; }
+.nav-social-link:hover, .nav-social-link:focus-visible{
+  background: rgba(255,255,255,0.14);
+  color: var(--accent);
+  transform: translateY(-2px);
+  outline: none;
 }
 
 #sound-toggle{
@@ -107,6 +150,32 @@ ul{ margin:0; padding:0; }
 #sound-toggle:hover, #sound-toggle:focus-visible{
   background: rgba(255,255,255,0.18);
   transform: scale(1.07);
+  outline: none;
+}
+
+/* Hidden on wide screens; becomes the only way to reach nav-nodes/nav-social
+   below the breakpoint (see MOBILE section for the collapsed state). */
+.nav-hamburger{
+  display: none;
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  border-radius: 6px;
+  border: 2px solid var(--coin);
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background .15s;
+}
+.nav-hamburger span{
+  display:block;
+  width: 18px; height: 2px;
+  background: var(--white);
+}
+.nav-hamburger:hover, .nav-hamburger:focus-visible{
+  background: rgba(255,255,255,0.18);
   outline: none;
 }
 
@@ -202,6 +271,37 @@ ul{ margin:0; padding:0; }
   display:flex; flex-direction:column; align-items:center; gap: 18px;
   padding: 0 20px;
 }
+.hero-flex{
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  text-align: left;
+  flex-wrap: wrap;
+}
+.hero-portrait-wrap{
+  flex-shrink: 0;
+  display:flex; align-items:center; justify-content:center;
+}
+#hero-portrait-canvas{
+  image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.35));
+}
+.hero-text{
+  display:flex; flex-direction:column; align-items:flex-start; gap: 16px;
+  max-width: 480px;
+}
+.accent-name{ color: var(--accent); }
+.cursor-blink{
+  display:inline-block;
+  color: var(--accent);
+  animation: cursor-blink 1s steps(1) infinite;
+}
+@keyframes cursor-blink{ 0%, 49%{ opacity: 1; } 50%, 100%{ opacity: 0; } }
+@media (max-width: 680px){
+  .hero-flex{ flex-direction: column; text-align: center; }
+  .hero-text{ align-items: center; }
+}
 
 .info-card a {
   color: var(--brick-red);
@@ -221,25 +321,66 @@ ul{ margin:0; padding:0; }
     3px 0 var(--brick-red), -3px 0 var(--brick-red), 0 3px var(--brick-red), 0 -3px var(--brick-red),
     5px 5px 0 var(--black);
 }
+.hero-greeting{
+  font-size: clamp(20px, 4.2vw, 38px);
+  line-height: 1.4;
+}
 .hero-tagline{
   font-family: var(--font-pixel);
   font-size: clamp(9px, 1.8vw, 13px);
-  color: var(--coin);
-  text-shadow: 2px 2px var(--black);
-  /* max-width: 600px; */
+  line-height: 1.7;
+  /* Was --coin (bright yellow) with a black shadow  busy and hard to read
+     as a full paragraph. Plain white with one soft shadow, same treatment
+     as the greeting above it, reads much more clearly at this size. */
+  color: var(--white);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.6);
+  max-width: 520px;
 }
 .hero-cta{
   margin-top: 20px;
   font-family: var(--font-pixel);
   font-size: 11px;
+  /* No solid fill  same white-on-red-outline treatment as the "hi,"/
+     "here" text above it, just at button scale, so it reads as part of
+     the same greeting instead of a separate colored block. */
   color: var(--white);
-  background: rgba(0,0,0,0.3);
-  border: 3px solid var(--white);
+  background: transparent;
+  border: 2px solid var(--white);
   padding: 12px 20px;
   text-decoration:none;
-  animation: blink 1.2s steps(1) infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-shadow: 2px 2px 0 var(--brick-red), 3px 3px 0 rgba(0,0,0,0.5);
+  transition: transform .15s, border-color .15s, background .15s;
 }
-@keyframes blink{ 50%{ opacity: 0.4; } }
+.hero-cta:hover, .hero-cta:focus-visible{
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.1);
+  outline: none;
+}
+
+.projects-github-link{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  width: fit-content;
+  margin: 0 auto 30px;
+  background: var(--white);
+  border: 3px solid var(--black);
+  padding: 12px 20px;
+  text-decoration:none;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--black);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+  transition: transform .12s, box-shadow .12s, background .12s;
+}
+.projects-github-link:hover, .projects-github-link:focus-visible{
+  background: var(--coin);
+  transform: translateY(-2px);
+  box-shadow: 5px 6px 0 rgba(0,0,0,0.4);
+  outline: none;
+}
 
 /* ================= CARDS ================= */
 .card-grid{
@@ -280,10 +421,12 @@ ul{ margin:0; padding:0; }
   font-style: italic;
   margin-bottom: 10px;
 }
-.info-card p{ font-size: 14px; line-height: 1.65; margin: 0 0 10px; }
+/* Slightly bolder than the browser default for this monospace body font
+   plain regular weight was reading a little thin/light at this size. */
+.info-card p{ font-size: 14px; font-weight: 600; line-height: 1.65; margin: 0 0 10px; }
 .info-card p:last-child{ margin-bottom: 0; }
 .info-card ul{ margin-left: 18px; }
-.info-card li{ font-size: 14px; line-height: 1.6; margin-bottom: 7px; }
+.info-card li{ font-size: 14px; font-weight: 600; line-height: 1.6; margin-bottom: 7px; }
 .info-card li:last-child{ margin-bottom: 0; }
 
 /* timeline (experience) variant: stacked full-width cards */
@@ -380,8 +523,12 @@ ul{ margin:0; padding:0; }
   background: var(--black);
   color: #888;
   text-align:center;
-  font-size: 12px;
-  padding: 20px;
+  font-size: 13px;
+  /* Extra bottom padding is deliberate: the fixed on-screen mario-controls
+     bar (~74px tall + its own bottom offset) floats above every page, so
+     without this clearance it sits right on top of the copyright line at
+     the very bottom of the page. */
+  padding: 34px 20px 140px;
 }
 
 /* ================= MARIO LAYER ================= */
@@ -536,6 +683,154 @@ ul{ margin:0; padding:0; }
 #mario-controls button:active{ background: var(--coin); }
 #mario-jump{ width: 58px; height: 58px; font-size: 9px; background: rgba(252,216,0,0.92); }
 
+/* ================= GAME MODE ================= */
+/* An overlay on the live page, not a popup: toggle it on, walk the mushroom
+   around the current screen, toggle it off  never blocks or gates content. */
+#game-mode-bar{
+  position: fixed;
+  top: calc(var(--nav-h) + 12px);
+  left: 16px;
+  z-index: 140;
+  display:flex; align-items:center; gap: 8px;
+}
+#game-mode-toggle{
+  display:flex; align-items:center; gap: 8px;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--white);
+  background: rgba(16,16,16,0.85);
+  border: 2px solid var(--coin);
+  border-radius: 999px;
+  padding: 9px 14px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.4);
+  transition: transform .12s;
+}
+#game-mode-toggle:hover, #game-mode-toggle:focus-visible{ transform: translateY(-2px); outline: none; }
+.game-mode-dot{
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  flex-shrink: 0;
+}
+#game-mode-toggle.is-on .game-mode-dot{
+  background: var(--grass);
+  box-shadow: 0 0 0 3px rgba(0,168,0,0.35);
+}
+#game-info-btn{
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--coin);
+  background: rgba(16,16,16,0.85);
+  color: var(--coin);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+}
+#game-info-popover{
+  position: absolute;
+  top: 46px; left: 0;
+  width: 240px;
+  background: var(--white);
+  border: 3px solid var(--black);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+  padding: 10px 12px;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  line-height: 1.7;
+  color: var(--black);
+}
+#game-info-popover.hidden{ display:none; }
+
+#game-score-pill{
+  position: fixed;
+  top: calc(var(--nav-h) + 12px);
+  right: 16px;
+  z-index: 140;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  color: var(--coin);
+  background: rgba(16,16,16,0.85);
+  border: 2px solid var(--coin);
+  border-radius: 999px;
+  padding: 9px 16px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.4);
+}
+#game-score-pill.hidden{ display:none; }
+
+#game-canvas{
+  position: fixed;
+  inset: 0;
+  width: 100vw; height: 100vh;
+  z-index: 130; /* above the sticky nav (100) so the mushroom can run in
+                   front of it, below the GAME MODE HUD (140); pointer-events
+                   stay off so every click still reaches the real page */
+  pointer-events: none;
+  display: none;
+}
+body.game-mode-active #game-canvas{ display: block; }
+/* Swarna's ambient character keeps doing her own thing  walking, auto-jumping,
+   the works  completely untouched while GAME MODE is on. The mushroom is a
+   separate character on its own canvas layer on top of her, not a replacement. */
+
+.game-fail-toast{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  z-index: 145;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--white);
+  background: rgba(184,16,0,0.92);
+  border: 3px solid var(--black);
+  padding: 16px 26px;
+  max-width: 90vw;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s, transform .15s;
+}
+.game-fail-toast.show{
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.game-win-banner{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  z-index: 146;
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  line-height: 1.9;
+  text-align: center;
+  color: var(--black);
+  background: linear-gradient(180deg, #fff6c8, var(--coin));
+  border: 4px solid var(--black);
+  border-radius: 10px;
+  padding: 22px 34px;
+  max-width: 90vw;
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.game-win-banner span{ font-size: 12px; display:block; margin-top: 4px; }
+.game-win-banner.show{
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  animation: win-bob 0.6s ease-in-out infinite alternate;
+}
+@keyframes win-bob{
+  from{ transform: translate(-50%, -50%) scale(1) rotate(-2deg); }
+  to{ transform: translate(-50%, -50%) scale(1.03) rotate(2deg); }
+}
+
 /* ================= REDUCED MOTION ================= */
 @media (prefers-reduced-motion: reduce){
   html{ scroll-behavior: auto; }
@@ -548,11 +843,59 @@ ul{ margin:0; padding:0; }
   .sparkle-fx{ display: none; }
 }
 
+/* GAME MODE needs arrow keys / spacebar  there's no on-screen equivalent
+   for it (unlike the ambient character's own #mario-controls d-pad), so
+   it's not actually playable on a touch device. Hiding the toggle instead
+   of shipping a control a phone can't use. */
+@media (max-width: 760px){
+  #game-mode-bar{ display: none; }
+}
+
+/* ================= MOBILE NAV (collapsible) ================= */
+@media (max-width: 760px){
+  .nav-hamburger{ display:flex; }
+  .nav-menu{
+    display: none;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--nav-bg);
+    border-bottom: 4px solid var(--coin);
+    padding: 8px 16px 16px;
+    max-height: calc(100vh - var(--nav-h));
+    overflow-y: auto;
+  }
+  .nav-menu.open{ display:flex; }
+  .nav-nodes{
+    flex-direction: column;
+    overflow-x: visible;
+    gap: 2px;
+  }
+  .nav-node{
+    width: 100%;
+    text-align: left;
+    font-size: 11px;
+    padding: 10px 6px;
+  }
+  .nav-social{
+    margin-left: 0;
+    margin-top: 10px;
+    padding-left: 0;
+    padding-top: 12px;
+    border-left: none;
+    border-top: 2px solid rgba(255,255,255,0.2);
+    justify-content: flex-start;
+    gap: 14px;
+  }
+}
+
 /* ================= MOBILE ================= */
 @media (max-width: 640px){
-  .nav-logo{ display:none; }
   .level-section{ padding: 70px 0 140px; }
   .hero-logo{ font-size: clamp(26px, 9vw, 40px); }
   #mario-controls{ bottom: 14px; }
   .resume-cta{ font-size: 10px; padding: 12px 16px; }
+  #game-mode-toggle{ font-size: 8px; padding: 8px 10px; }
+  #game-info-popover{ width: 200px; }
 }

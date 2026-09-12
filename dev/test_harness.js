@@ -35,10 +35,10 @@ window.scrollTo = window.scrollTo || function () {};
 // pixel output. toDataURL is mocked to return a harmless placeholder.
 const mockCtx = {
   fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textAlign: '', textBaseline: '',
-  fillRect() {}, strokeRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {},
+  fillRect() {}, strokeRect() {}, clearRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {},
   arc() {}, ellipse() {}, fill() {}, closePath() {}, fillText() {},
   createLinearGradient() { return { addColorStop() {} }; },
-  drawImage() {}, save() {}, restore() {}, translate() {}, scale() {}, setTransform() {},
+  drawImage() {}, save() {}, restore() {}, translate() {}, scale() {}, rotate() {}, setTransform() {},
 };
 window.HTMLCanvasElement.prototype.getContext = function () { return mockCtx; };
 window.HTMLCanvasElement.prototype.toDataURL = function () { return 'data:image/png;base64,MOCK'; };
@@ -73,6 +73,9 @@ setTimeout(() => {
   const doc = window.document;
   const navNodes = doc.querySelectorAll('.nav-node');
   console.log('nav nodes created:', navNodes.length, '(expect 6)');
+
+  const navSocialLinks = doc.querySelectorAll('.nav-social-link');
+  console.log('nav social links created:', navSocialLinks.length, '(expect 4, in their own #nav-social group)');
 
   const marioSprite = doc.getElementById('mario-sprite');
   console.log('mario sprite src set:', marioSprite.src && marioSprite.src.startsWith('data:image'));
@@ -156,6 +159,30 @@ setTimeout(() => {
     console.log('cat-truck element created:', !!truck, 'src starts with data:image:', truck && truck.src.startsWith('data:image'));
   } catch (e) {
     console.error('TRUCK CHECK FAILED:', e.stack);
+    errorCount++;
+  }
+
+  // check GAME MODE wires up without throwing: toggle on, move + jump, toggle off.
+  // It's an overlay on the live page (not a popup gating content), so also
+  // confirm the page itself stays untouched by it (no scroll lock, etc).
+  try {
+    const toggleBtn = doc.getElementById('game-mode-toggle');
+    const canvas = doc.getElementById('game-canvas');
+    const scorePill = doc.getElementById('game-score-pill');
+    const infoBtn = doc.getElementById('game-info-btn');
+    console.log('game-mode-toggle created:', !!toggleBtn, 'canvas created:', !!canvas);
+    toggleBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    console.log('game mode activated OK, body class set:', doc.body.classList.contains('game-mode-active'), 'score pill shown:', !scorePill.classList.contains('hidden'));
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { code: 'ArrowRight', bubbles: true, cancelable: true }));
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true }));
+    window.dispatchEvent(new window.KeyboardEvent('keyup', { code: 'ArrowRight', bubbles: true, cancelable: true }));
+    console.log('move + jump handled OK');
+    infoBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    console.log('info popover toggled OK');
+    toggleBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    console.log('game mode deactivated OK, body class removed:', !doc.body.classList.contains('game-mode-active'));
+  } catch (e) {
+    console.error('GAME MODE CHECK FAILED:', e.stack);
     errorCount++;
   }
 
